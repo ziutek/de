@@ -4,11 +4,9 @@
 package de
 
 import (
-	"github.com/ziutek/blas"
-	"math"
 )
 
-type MinMax struct {
+type Range struct {
 	Min, Max float64
 }
 
@@ -31,6 +29,9 @@ type Minimizer struct {
 	cost func([]float64) float64 // function to minimize
 }
 
-func NewMinimizer(mm []MinMax, cr float64) *Minimizer {
-
+// Creates new minimizer
+// ia - area for initial population
+// cr - crossover probability
+func NewMinimizer(ia []Range, cr float64) *Minimizer {
+	return nil
 }

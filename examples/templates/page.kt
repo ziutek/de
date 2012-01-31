@@ -6,11 +6,12 @@
 </head>
 <body>
 <section>
-  Received from server: <span id=data>?</span>
+    Received from server: <span id=data>?</span>
+    <img src='/func.png' alt='Function to minimize'>
 </section>
 <script>
     if ("WebSocket" in window) {
-        var ws = new WebSocket("ws://$HostPort/data");
+        var ws = new WebSocket("ws://$ListenOn/data");
         var data = document.getElementById("data").firstChild
         ws.onmessage = function(e) { data.nodeValue = e.data; }
     } else {

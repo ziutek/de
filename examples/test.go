@@ -10,26 +10,24 @@ import (
 	"time"
 )
 
-var (
-	listenOn = "127.0.0.1:8080"
-	page     kview.View
-)
-
 type Ctx struct {
-	HostPort string
+	ListenOn string
+	OP       OP
 }
 
-func show(w http.ResponseWriter, r *http.Request) {
-	ctx := Ctx{
-		HostPort: listenOn,
-	}
+var (
+	page kview.View
+	ctx  = Ctx{ListenOn: "127.0.0.1:8080"}
+)
+
+func html(w http.ResponseWriter, r *http.Request) {
 	page.Exec(w, ctx)
 }
 
 func data(w *websocket.Conn) {
 	for i := 0; ; i++ {
 		if err := websocket.JSON.Send(w, i); err != nil {
-			if oe, ok := err.(*net.OpError); !ok || oe.Err != syscall.EPIPE {
+			if e, ok := err.(*net.OpError); !ok || e.Err != syscall.EPIPE {
 				log.Print(err)
 			}
 			return
@@ -40,7 +38,8 @@ func data(w *websocket.Conn) {
 
 func main() {
 	page = kview.New("page.kt")
-	http.HandleFunc("/", show)
+	http.HandleFunc("/", html)
+	http.Handle("/func.png", ctx.OP)
 	http.Handle("/data", websocket.Handler(data))
-	http.ListenAndServe(listenOn, nil)
+	http.ListenAndServe(ctx.ListenOn, nil)
 }
