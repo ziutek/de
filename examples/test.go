@@ -32,14 +32,14 @@ func data(w *websocket.Conn) {
 			}
 			return
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Second / 15)
 	}
 }
 
 func main() {
 	page = kview.New("page.kt")
 	http.HandleFunc("/", html)
-	http.Handle("/func.png", ctx.OP)
+	http.Handle("/img", ctx.OP)
 	http.Handle("/data", websocket.Handler(data))
 	http.ListenAndServe(ctx.ListenOn, nil)
 }
