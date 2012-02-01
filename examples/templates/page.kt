@@ -12,26 +12,22 @@
     if ("HTMLCanvasElement" in window) {
         var canvas = document.getElementById("img");
         var ctx = canvas.getContext("2d");
-        var ready = false;
         var img = new Image();
         img.onload = function() {
             canvas.width = img.width;
             canvas.height = img.height;
-            ready = true;
-        }
-        img.src = "/img";
-        if ("WebSocket" in window) {
-            var ws = new WebSocket("ws://$ListenOn/data");
-            ws.onmessage = function(e) {
-                if (ready) {
+            if ("WebSocket" in window) {
+                var ws = new WebSocket("ws://$ListenOn/data");
+                ws.onmessage = function(e) {
                     ctx.drawImage(img, 0, 0);
-                    ctx.fillStyle = "#f00";
-                    ctx.fillRect(e.data, e.data, 2, 2);
+                    ctx.strokeStyle = "#f00";
+                    ctx.strokeRect(e.data, e.data, 1, 1);
                 }
+            } else {
+                alert("Websocket not supported by your browser!");
             }
-        } else {
-            alert("Websocket not supported by your browser!");
         }
+        img.src = "/img?i=" + new Date().getTime();
     }
 </script>
 </body>

@@ -19,16 +19,19 @@ var (
 	img  []byte
 )
 
-// Description of optimization problem
+// This type describes the optimization problem for both: the optimizer and
+// the vizualization framework.
 type OP struct{}
 
-// Returns area on which we search minimum of cost 
+// Returns an initial area on which we search minimum of cost function
 func (o OP) Area() []de.Range {
 	return area
 }
 
 // Function to minimize
 func (o OP) Cost(x, y float64) float64 {
+	x += -1.5
+	y += -2.5
 	r := math.Sqrt(x*x + y*y)
 	return -math.Cos(math.Pi*r) / (1 + r)
 }
