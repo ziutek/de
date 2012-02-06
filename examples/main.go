@@ -38,13 +38,13 @@ func data(w *websocket.Conn) {
 	max := matrix.NewDense(1, 2, 2, ctx.OP.Max()...)
 	p := matrix.DenseZero(1, 2)
 	scale := ctx.OP.Scale()
-	m := de.NewMinimizer(cost, 20, min, max)
+	m := de.NewMinimizer(cost, 10, min, max)
 	points := make([]struct{ X, Y int }, len(m.Pop))
 
 	for {
 		minCost, maxCost := m.NextGen()
 		sum := math.Abs(minCost) + math.Abs(maxCost)
-		diff := math.Abs(minCost - maxCost)
+		diff := math.Abs(maxCost - minCost)
 		if diff/(sum+2*math.SmallestNonzeroFloat64) < 1e-3 {
 			return
 		}

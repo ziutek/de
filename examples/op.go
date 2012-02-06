@@ -30,6 +30,9 @@ func (o OP) Cost(v []float64) float64 {
 	x := v[0] - 1.5
 	y := v[1] - 2.5
 	r := math.Sqrt(x*x + y*y)
+	if x > y {
+		r = r + 1
+	}
 	return -math.Cos(math.Pi*r) / (1 + r)
 }
 
