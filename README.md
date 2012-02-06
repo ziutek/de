@@ -1,4 +1,3 @@
-#### Differential evolution optimization library
+#### [Differential evolution](http://en.wikipedia.org/wiki/Differential_evolution) optimization library
 
-Work in progress...
-See [http://en.wikipedia.org/wiki/Differential_evolution]
+See [documentation](http://gopkgdoc.appspot.com/pkg/github.com/ziutek/de)
