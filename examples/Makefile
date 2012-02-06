@@ -2,7 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=test
 GOFILES=\
-	test.go\
+	main.go\
 	op.go\
 
 include $(GOROOT)/src/Make.cmd

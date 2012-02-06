@@ -24,7 +24,7 @@ type Minimizer struct {
 // cost - function to minimize
 // n - number of entities in population
 // min, max - area for initial population
-func New(cost Cost, n int, min, max *matrix.Dense) *Minimizer {
+func NewMinimizer(cost Cost, n int, min, max *matrix.Dense) *Minimizer {
 	if n < 4 {
 		panic("population too small")
 	}
