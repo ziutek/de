@@ -4,6 +4,7 @@ package de
 
 import (
 	"github.com/ziutek/matrix"
+	"log"
 	"math"
 	"math/rand"
 	"time"
@@ -14,8 +15,9 @@ type Cost func(*matrix.Dense) float64
 
 // Minimizes cost function by evoluting the population of multiple agents
 type Minimizer struct {
-	Pop []*Agent // population of agents
-	CR  float64  // crossover probability (default 0.9)
+	Pop    []*Agent // population of agents
+	CR     float64  // crossover probability (default 0.9)
+	BestId int
 
 	rnd *rand.Rand
 }
@@ -26,7 +28,7 @@ type Minimizer struct {
 // min, max - area for initial population
 func NewMinimizer(cost Cost, n int, min, max *matrix.Dense) *Minimizer {
 	if n < 4 {
-		panic("population too small")
+		log.Panic("population too small: ", n)
 	}
 	m := new(Minimizer)
 	m.CR = 0.9
@@ -40,10 +42,11 @@ func NewMinimizer(cost Cost, n int, min, max *matrix.Dense) *Minimizer {
 	return m
 }
 
-// Calculate next generation. Returns id and cost of the best agent. 
-func (m *Minimizer) NextGen() (int, float64) {
-	bestId := 0
-	bestCost := math.MaxFloat64
+// Calculate next generation. Returns min and max cost in population. 
+func (m *Minimizer) NextGen() (minCost, maxCost float64) {
+	minCost = math.MaxFloat64
+	maxCost = -math.MaxFloat64
+
 	// Perform crossover
 	for i, x := range m.Pop {
 		f := 0.5 + m.rnd.Float64()*0.5
@@ -53,12 +56,15 @@ func (m *Minimizer) NextGen() (int, float64) {
 	// Get results
 	for i, x := range m.Pop {
 		c := <-x.out
-		if c < bestCost {
-			bestCost = c
-			bestId = i
+		if c < minCost {
+			minCost = c
+			m.BestId = i
+		}
+		if c > maxCost {
+			maxCost = c
 		}
 	}
-	return bestId, bestCost
+	return
 }
 
 // Stops all gorutines and invalidates m

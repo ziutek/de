@@ -6,7 +6,8 @@
 </head>
 <body>
 <section>
-    <canvas id=img>Canvas not supported by your browser!</canvas>
+    <canvas id=img>Canvas not supported by your browser!</canvas><br>
+    Status: <span id=status>working...</span>
 </section>
 <script>
     if ("HTMLCanvasElement" in window) {
@@ -19,9 +20,17 @@
             if ("WebSocket" in window) {
                 var ws = new WebSocket("ws://$ListenOn/data");
                 ws.onmessage = function(e) {
+                    var points = JSON.parse(e.data);
                     ctx.drawImage(img, 0, 0);
-                    ctx.strokeStyle = "#f00";
-                    ctx.strokeRect(e.data, e.data, 1, 1);
+                    for (var i in points) {
+                        var p = points[i];
+                        ctx.strokeStyle = "#f00";
+                        ctx.strokeRect(p.X, p.Y, 1, 1);
+                    }
+                }
+                ws.onclose = function(e) {
+                    var s = document.getElementById("status");
+                    s.firstChild.nodeValue = "completed.";
                 }
             } else {
                 alert("Websocket not supported by your browser!");

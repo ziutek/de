@@ -43,8 +43,9 @@ func (a *Agent) cutpoints(cr float64) (start, stop int) {
 	for l < n && a.rnd.Float64() < cr {
 		l++
 	}
+	// now l <= n
 	start = a.rnd.Intn(n)
-	stop = (start + l) % n
+	stop = (start + l) % (n + 1)
 	return
 }
 
@@ -58,7 +59,7 @@ func perturb(u *matrix.Dense, in args, start, stop int) {
 func (a *Agent) crossoverLoop() {
 	U := matrix.DenseZero(a.X.Size()) // place for mutated matrix
 	u := U.Hvec()                     // we operate on vectorized matrices
-	n := u.Rows()
+	n := u.Cols()
 	costX := a.cost(a.X)
 
 	for in := range a.in {
@@ -74,8 +75,9 @@ func (a *Agent) crossoverLoop() {
 			perturb(u, in, start, stop)
 			u.Vslice(stop, n).Copy(a.x.Vslice(stop, n))
 		} else {
+			stop++ // because it is modulo (n+1)
 			perturb(u, in, 0, stop)
-			u.Vslice(stop, start).Copy(a.x.Vslice(start, stop))
+			u.Vslice(stop, start).Copy(a.x.Vslice(stop, start))
 			perturb(u, in, start, n)
 		}
 		// Selection
