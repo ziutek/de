@@ -13,7 +13,7 @@ type args struct {
 
 type Agent struct {
 	X, x *matrix.Dense
-	in   chan args    // to send three vectors for crossover
+	in   chan args    // to send three vectors for crossovera
 	out  chan float64 // to obtain actual cost value for this agent
 	rnd  *rand.Rand
 	cost Cost
@@ -62,6 +62,9 @@ func (a *Agent) crossoverLoop() {
 	costX := a.cost(a.X)
 
 	for in := range a.in {
+		if in.a == nil {
+			return
+		}
 		start, stop := a.cutpoints(in.cr)
 		// Crossover:
 		//  u = a + f * (b + c) for elements between start and stop

@@ -61,6 +61,14 @@ func (m *Minimizer) NextGen() (int, float64) {
 	return bestId, bestCost
 }
 
+// Stops all gorutines and invalidates m
+func (m *Minimizer) Delete() {
+	for _, x := range m.Pop {
+		x.in <- args{}
+	}
+	m.Pop = nil
+}
+
 // Returns three random agents different from Pop[i]
 func (m *Minimizer) abc(i int) (a, b, c *Agent) {
 	n := len(m.Pop)
