@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"image/png"
@@ -9,24 +10,60 @@ import (
 )
 
 const (
-	width   = 60
-	height  = 50
-	minX    = -6
-	maxX    = 6
-	minY    = -5
-	maxY    = 5
+	width  = 120
+	height = 100
+	minX   = -6
+	maxX   = 6
+	minY   = -5
+	maxY   = 5
 
-	minU    = -2.5
-	maxU    = 2.5
-	minV    = -1.5
-	maxV    = 1.5
+	cols = 9
+	rows = 7
+	minU = -3
+	maxU = 3
+	minV = -2.5
+	maxV = 2.5
 
-
-	mapW = int((maxX - minX) * ScaleXY)
-	mapH = int((maxY - minY) * ScaleXY)
-	cols = int((maxU - minU) * ScaleUV)
-	rows = int((maxV - minV) * ScaleUV)
+	dX     = maxX - minX
+	dY     = maxY - minY
+	dU     = maxU - minU
+	dV     = maxV - minV
+	scaleX = float64(dX) / float64(width)
+	scaleY = float64(dY) / float64(height)
+	scaleU = float64(dU) / float64(cols)
+	scaleV = float64(dV) / float64(rows)
 )
+
+// Converts 4D point to 2D image point
+func D4toD2(p []float64) (int, int) {
+	x, y, u, v := p[0], p[1], p[2], p[3]
+	c := int(cols * (u - minU) / dU)
+	r := int(rows * (v - minV) / dV)
+	// Check bounds
+	if c < 0 || c >= cols || r < 0 || r >= rows {
+		return -1, -1
+	}
+	i := int(width * (x - minX) / dX)
+	k := int(height * (y - minY) / dY)
+	// Check bounds
+	if i < 0 || i >= width || k < 0 || k >= height {
+		return -1, -1
+	}
+	return c*width + i, r*height + k
+}
+
+// Converts 2D image point to 4D point (notice that D2toD4(D4toD2(p)) != p)
+func D2toD4(i, k int) []float64 {
+	if i < 0 || k < 0 {
+		nan := math.NaN()
+		return []float64{nan, nan, nan, nan}
+	}
+	x := minX + (float64(i%width)+0.5)*scaleX
+	y := minY + (float64(k%height)+0.5)*scaleY
+	u := minU + (float64(i/width)+0.5)*scaleU
+	v := minV + (float64(k/height)+0.5)*scaleV
+	return []float64{x, y, u, v}
+}
 
 // Function to minimize
 func Cost(p []float64) float64 {
@@ -46,31 +83,19 @@ func Max() []float64 {
 	return []float64{maxU, maxV, maxX, maxY}
 }
 
-// Converts 4D point to 2D image point
-func D4toD2(p []float64) (int, int) {
-	x, y, u, v := p[0], p[1], p[2], p[3]
-	k := int((u - minU) * ScaleUV) // column
-	i := int((v - minV) * ScaleUV) // row
-	return k*mapW + int(x*ScaleXY), i*mapH + int(y*ScaleXY)
-}
+type pngImage []byte
 
-// Converts 2D image point to 4D point
-func D2toD4(i, k int) []float64 {
-	x := minX + float64(i%mapW)/ScaleXY
-	y := minY + float64(k%mapH)/ScaleXY
-	u := minU + float64(i/mapW)/ScaleUV
-	v := minV + float64(k/mapH)/ScaleUV
-	return []float64{x, y, u, v}
-}
-
-// Generates image for specified u and v
-func img(w http.ResponseWriter, r *http.Request) {
+// Sends image via HTTP
+func (i pngImage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
-	// Generate image that shows the cost function in the area
-	b := image.Rect(
-		0, 0,
-		mapW*cols, mapH*rows,
-	)
+	w.Write(i)
+}
+
+var Img pngImage
+
+func init() {
+	// Generate image that shows the cost function in 4d area
+	b := image.Rect(0, 0, width*cols, height*rows)
 	m := image.NewNRGBA(b)
 	c := color.NRGBA{A: 255}
 	for y := 0; y < b.Max.Y; y++ {
@@ -84,5 +109,7 @@ func img(w http.ResponseWriter, r *http.Request) {
 			m.Set(x, y, c)
 		}
 	}
-	png.Encode(w, m)
+	var buf bytes.Buffer
+	png.Encode(&buf, m)
+	Img = buf.Bytes()
 }

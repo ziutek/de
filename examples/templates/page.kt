@@ -2,17 +2,21 @@
 <html lang=en>
 	<head>
 		<meta charset='utf-8'>
-		<title>DE test</title>
+		<title>Differential evolution - 4d problem</title>
 	</head>
 	<body>
-		<table>
 		<canvas id=img>Canvas not supported by your browser!</canvas><br>
 		Status: <span id=status>working...</span>
+		Iteration: <span id=iter>0</span>
 		<script>
+			var iter = 0;
 			if ("HTMLCanvasElement" in window) {
 				var canvas = document.getElementById("img");
 				var ctx = canvas.getContext("2d");
 				var img = new Image();
+				var i = 0;
+				var iter = document.getElementById("iter").firstChild;
+				var stat = document.getElementById("status").firstChild;
 				img.onload = function() {
 					canvas.width = img.width;
 					canvas.height = img.height;
@@ -21,17 +25,17 @@
 						ws.onmessage = function(e) {
 							var points = JSON.parse(e.data);
 							ctx.drawImage(img, 0, 0);
-							for (var i in points) {
-								var p = points[i];
+							for (var k in points) {
+								var p = points[k];
 								ctx.strokeStyle = "#f00";
 								ctx.strokeRect(p[0], p[1], 1, 1);
 							}
+							iter.nodeValue = ++i;
 						}
 						ws.onclose = function(e) {
-							var s = document.getElementById("status");
-							s.firstChild.nodeValue = "completed.";
+							stat.nodeValue = "completed.";
 						}
-						} else {
+					} else {
 						alert("Websocket not supported by your browser!");
 					}
 				}

@@ -35,7 +35,7 @@ func data(w *websocket.Conn) {
 
 	min := matrix.NewDense(1, 4, 4, Min()...)
 	max := matrix.NewDense(1, 4, 4, Max()...)
-	m := de.NewMinimizer(cost, 10, min, max)
+	m := de.NewMinimizer(cost, 20, min, max)
 	points := make([][2]int, len(m.Pop))
 	for {
 		minCost, maxCost := m.NextGen()
@@ -44,11 +44,11 @@ func data(w *websocket.Conn) {
 		if diff/(sum+2*math.SmallestNonzeroFloat64) < 1e-3 {
 			return
 		}
+		// Transform agents to points on image
 		for i, a := range m.Pop {
-			// Calculate the coordinates of a point on the image
 			points[i][0], points[i][1] = D4toD2(a.X.Elems())
 		}
-		// Send points to the browser side application		
+		// Send points to the browser
 		if err := websocket.JSON.Send(w, points); err != nil {
 			e, ok := err.(*net.OpError)
 			if !ok || e.Err != syscall.EPIPE && e.Err != syscall.ECONNRESET {
@@ -63,7 +63,7 @@ func data(w *websocket.Conn) {
 func main() {
 	page = kview.New("page.kt")
 	http.HandleFunc("/", html)
-	http.HandleFunc("/img", img)
+	http.Handle("/img", Img)
 	http.Handle("/data", websocket.Handler(data))
 	http.ListenAndServe(ListenOn, nil)
 }
