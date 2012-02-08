@@ -15,32 +15,28 @@ import (
 
 type Ctx struct {
 	ListenOn string
-	OP       OP
 }
 
 var (
-	page kview.View
-	ctx  = Ctx{ListenOn: "127.0.0.1:8080"}
+	page     kview.View
+	ListenOn = "127.0.0.1:8080"
 )
 
 func html(w http.ResponseWriter, r *http.Request) {
-	page.Exec(w, ctx)
+	page.Exec(w, Ctx{ListenOn: ListenOn})
 }
 
 func cost(m *matrix.Dense) float64 {
-	return ctx.OP.Cost(m.Elems())
+	return Cost(m.Elems())
 }
 
 func data(w *websocket.Conn) {
 	defer w.Close()
 
-	min := matrix.NewDense(1, 2, 2, ctx.OP.Min()...)
-	max := matrix.NewDense(1, 2, 2, ctx.OP.Max()...)
-	p := matrix.DenseZero(1, 2)
-	scale := ctx.OP.Scale()
+	min := matrix.NewDense(1, 4, 4, Min()...)
+	max := matrix.NewDense(1, 4, 4, Max()...)
 	m := de.NewMinimizer(cost, 10, min, max)
-	points := make([]struct{ X, Y int }, len(m.Pop))
-
+	points := make([][2]int, len(m.Pop))
 	for {
 		minCost, maxCost := m.NextGen()
 		sum := math.Abs(minCost) + math.Abs(maxCost)
@@ -48,12 +44,9 @@ func data(w *websocket.Conn) {
 		if diff/(sum+2*math.SmallestNonzeroFloat64) < 1e-3 {
 			return
 		}
-
 		for i, a := range m.Pop {
 			// Calculate the coordinates of a point on the image
-			p.Sub(a.X, min, scale)
-			points[i].X = int(p.Get(0, 0))
-			points[i].Y = int(p.Get(0, 1))
+			points[i][0], points[i][1] = D4toD2(a.X.Elems())
 		}
 		// Send points to the browser side application		
 		if err := websocket.JSON.Send(w, points); err != nil {
@@ -70,7 +63,7 @@ func data(w *websocket.Conn) {
 func main() {
 	page = kview.New("page.kt")
 	http.HandleFunc("/", html)
-	http.Handle("/img", ctx.OP)
+	http.HandleFunc("/img", img)
 	http.Handle("/data", websocket.Handler(data))
-	http.ListenAndServe(ctx.ListenOn, nil)
+	http.ListenAndServe(ListenOn, nil)
 }
