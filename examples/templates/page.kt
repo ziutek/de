@@ -25,9 +25,9 @@
 						ws.onmessage = function(e) {
 							var points = JSON.parse(e.data);
 							ctx.drawImage(img, 0, 0);
+							ctx.strokeStyle = "#f00";
 							for (var k in points) {
 								var p = points[k];
-								ctx.strokeStyle = "#f00";
 								ctx.strokeRect(p[0], p[1], 1, 1);
 							}
 							iter.nodeValue = ++i;
