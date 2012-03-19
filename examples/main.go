@@ -19,11 +19,11 @@ type Ctx struct {
 
 var (
 	page     kview.View
-	ListenOn = "127.0.0.1:8080"
+	listenOn = "127.0.0.1:8080"
 )
 
 func html(w http.ResponseWriter, r *http.Request) {
-	page.Exec(w, Ctx{ListenOn: ListenOn})
+	page.Exec(w, Ctx{ListenOn: listenOn})
 }
 
 func cost(m *matrix.Dense) float64 {
@@ -39,12 +39,7 @@ func data(w *websocket.Conn) {
 	points := make([][2]int, len(m.Pop))
 	for {
 		minCost, maxCost := m.NextGen()
-		sum := math.Abs(minCost) + math.Abs(maxCost)
-		diff := math.Abs(maxCost - minCost)
-		if diff/(sum+2*math.SmallestNonzeroFloat64) < 1e-3 {
-			return
-		}
-		// Transform agents to points on image
+		// Transform agents in 4D space to points on 2D image
 		for i, a := range m.Pop {
 			points[i][0], points[i][1] = D4toD2(a.X.Elems())
 		}
@@ -56,6 +51,13 @@ func data(w *websocket.Conn) {
 			}
 			return
 		}
+		// Check the end condition
+		sum := math.Abs(minCost) + math.Abs(maxCost)
+		diff := math.Abs(maxCost - minCost)
+		if diff/(sum+2*math.SmallestNonzeroFloat64) < 1e-4 {
+			return
+		}
+		// Slow down calculations for better presentation
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -65,5 +67,6 @@ func main() {
 	http.HandleFunc("/", html)
 	http.Handle("/img", Img)
 	http.Handle("/data", websocket.Handler(data))
-	http.ListenAndServe(ListenOn, nil)
+	log.Printf("Web server (at %s) is ready.\n", listenOn)
+	http.ListenAndServe(listenOn, nil)
 }
