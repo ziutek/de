@@ -1,7 +1,7 @@
 package main
 
 import (
-	"code.google.com/p/go.net/websocket"
+	"golang.org/x/net/websocket"
 	"github.com/ziutek/de"
 	"github.com/ziutek/kview"
 	"github.com/ziutek/matrix"
