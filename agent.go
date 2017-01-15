@@ -16,17 +16,15 @@ type Agent struct {
 	in   chan args    // to send three vectors for crossovera
 	out  chan float64 // to obtain actual cost value for this agent
 	rnd  *rand.Rand
-	cost Cost
 }
 
-func newAgent(min, width matrix.Dense, cost Cost) *Agent {
+func newAgent(min, width matrix.Dense, newcost func() Cost) *Agent {
 	a := new(Agent)
 	a.X = matrix.MakeDense(min.Size())
 	a.x = a.X.AsRow() // crossover operates on vectorized matrix
 	a.in = make(chan args, 1)
 	a.out = make(chan float64, 1)
 	a.rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
-	a.cost = cost
 	// Place this agent in random place on the initial area.
 	for i := 0; i < a.x.NumRow(); i++ {
 		for k := 0; k < a.x.NumCol(); k++ {
@@ -36,7 +34,7 @@ func newAgent(min, width matrix.Dense, cost Cost) *Agent {
 	a.X.ArrMulBy(width)
 	a.X.AddTo(min, 1)
 	// Run crossover loop
-	go a.crossoverLoop()
+	go a.crossoverLoop(newcost)
 	return a
 }
 
@@ -60,11 +58,12 @@ func perturb(u matrix.Dense, in args, start, stop int) {
 }
 
 // Crossover loop
-func (a *Agent) crossoverLoop() {
+func (a *Agent) crossoverLoop(newcost func() Cost) {
 	U := matrix.MakeDense(a.X.Size()) // place for mutated matrix
 	u := U.AsRow()                    // we operate on vectorized matrices
 	n := u.NumCol()
-	costX := a.cost(a.X)
+	cost := newcost()
+	costX := cost.Cost(a.X)
 
 	for in := range a.in {
 		if !in.a.IsValid() {
@@ -85,7 +84,7 @@ func (a *Agent) crossoverLoop() {
 			perturb(u, in, start, n)
 		}
 		// Selection
-		if costU := a.cost(U); costU <= costX {
+		if costU := cost.Cost(U); costU <= costX {
 			a.X, U = U, a.X
 			a.x, u = u, a.x
 			costX = costU

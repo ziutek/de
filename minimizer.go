@@ -10,8 +10,10 @@ import (
 	"time"
 )
 
-// Type of function to minimize.
-type Cost func(matrix.Dense) float64
+// Cost is an interface that an optimization problem should implement.
+type Cost interface {
+	Cost(matrix.Dense) float64
+}
 
 // Minimizes cost function by evoluting the population of multiple agents.
 type Minimizer struct {
@@ -23,10 +25,11 @@ type Minimizer struct {
 }
 
 // Creates new minimizer:
-//	cost - function to minimize,
+//	newcost - should return new value that satisfies Cost interface (it is called
+//	concurently by population of agents during minmizer initialization),
 //	n - number of entities in population,
 //	min, max - area for initial population.
-func NewMinimizer(cost Cost, n int, min, max matrix.Dense) *Minimizer {
+func NewMinimizer(newcost func() Cost, n int, min, max matrix.Dense) *Minimizer {
 	if n < 4 {
 		log.Panic("population too small: ", n)
 	}
@@ -36,7 +39,7 @@ func NewMinimizer(cost Cost, n int, min, max matrix.Dense) *Minimizer {
 	// Initialization of population
 	max.AddTo(min, -1) // calculate width of initial area
 	for i := range m.Pop {
-		m.Pop[i] = newAgent(min, max, cost)
+		m.Pop[i] = newAgent(min, max, newcost)
 	}
 	m.rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 	return m

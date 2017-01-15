@@ -26,8 +26,14 @@ func html(w http.ResponseWriter, r *http.Request) {
 	page.Exec(w, Ctx{ListenOn: listenOn})
 }
 
-func cost(m matrix.Dense) float64 {
+type cost struct{}
+
+func (_ cost) Cost(m matrix.Dense) float64 {
 	return Cost(m.Elems())
+}
+
+func newcost() de.Cost {
+	return cost{}
 }
 
 func data(w *websocket.Conn) {
@@ -35,7 +41,7 @@ func data(w *websocket.Conn) {
 
 	min := matrix.AsDense(1, 4, Min())
 	max := matrix.AsDense(1, 4, Max())
-	m := de.NewMinimizer(cost, 20, min, max)
+	m := de.NewMinimizer(newcost, 20, min, max)
 	points := make([][2]int, len(m.Pop))
 	for {
 		minCost, maxCost := m.NextGen()
