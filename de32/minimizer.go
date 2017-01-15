@@ -1,4 +1,4 @@
-// Differential evolution optimization library
+// Package de32 implements Differential Evolution method of optimization.
 // See http://en.wikipedia.org/wiki/Differential_evolution
 package de32
 
