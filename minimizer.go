@@ -1,5 +1,5 @@
 // Differential evolution optimization library
-// See http://en.wikipedia.org/wiki/Differential_evolution 
+// See http://en.wikipedia.org/wiki/Differential_evolution
 package de
 
 import (
@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-// Type of function to minimize
-type Cost func(*matrix.Dense) float64
+// Type of function to minimize.
+type Cost func(matrix.Dense) float64
 
-// Minimizes cost function by evoluting the population of multiple agents
+// Minimizes cost function by evoluting the population of multiple agents.
 type Minimizer struct {
 	Pop    []*Agent // population of agents
 	CR     float64  // crossover probability (default 0.9)
@@ -22,11 +22,11 @@ type Minimizer struct {
 	rnd *rand.Rand
 }
 
-// Creates new minimizer
-// cost - function to minimize
-// n - number of entities in population
-// min, max - area for initial population
-func NewMinimizer(cost Cost, n int, min, max *matrix.Dense) *Minimizer {
+// Creates new minimizer:
+//	cost - function to minimize,
+//	n - number of entities in population,
+//	min, max - area for initial population.
+func NewMinimizer(cost Cost, n int, min, max matrix.Dense) *Minimizer {
 	if n < 4 {
 		log.Panic("population too small: ", n)
 	}
@@ -42,7 +42,7 @@ func NewMinimizer(cost Cost, n int, min, max *matrix.Dense) *Minimizer {
 	return m
 }
 
-// Calculate next generation. Returns min and max cost in population. 
+// Calculate next generation. Returns min and max cost in population.
 func (m *Minimizer) NextGen() (minCost, maxCost float64) {
 	minCost = math.MaxFloat64
 	maxCost = -math.MaxFloat64
@@ -67,7 +67,7 @@ func (m *Minimizer) NextGen() (minCost, maxCost float64) {
 	return
 }
 
-// Stops all gorutines and invalidates m
+// Stops all gorutines and invalidates m.
 func (m *Minimizer) Delete() {
 	for _, x := range m.Pop {
 		x.in <- args{}
@@ -75,7 +75,7 @@ func (m *Minimizer) Delete() {
 	m.Pop = nil
 }
 
-// Returns three random agents different from Pop[i]
+// Returns three random agents different from Pop[i].
 func (m *Minimizer) abc(i int) (a, b, c *Agent) {
 	n := len(m.Pop)
 	j := m.rnd.Intn(n - 1)

@@ -7,29 +7,33 @@ import (
 )
 
 type args struct {
-	a, b, c *matrix.Dense // three vectors for crossover
-	f, cr   float64       // differential weight and crossover probability
+	a, b, c matrix.Dense // three vectors for crossover
+	f, cr   float64      // differential weight and crossover probability
 }
 
 type Agent struct {
-	X, x *matrix.Dense
+	X, x matrix.Dense
 	in   chan args    // to send three vectors for crossovera
 	out  chan float64 // to obtain actual cost value for this agent
 	rnd  *rand.Rand
 	cost Cost
 }
 
-func newAgent(min, width *matrix.Dense, cost Cost) *Agent {
+func newAgent(min, width matrix.Dense, cost Cost) *Agent {
 	a := new(Agent)
-	a.X = matrix.DenseZero(min.Size())
-	a.x = a.X.Hvec() // crossover operates on vectorized matrix
+	a.X = matrix.MakeDense(min.Size())
+	a.x = a.X.AsRow() // crossover operates on vectorized matrix
 	a.in = make(chan args, 1)
 	a.out = make(chan float64, 1)
 	a.rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 	a.cost = cost
-	// Place this agent in random place on the initial area
-	a.x.Rand(0, 1)
-	a.X.MulBy(width)
+	// Place this agent in random place on the initial area.
+	for i := 0; i < a.x.NumRow(); i++ {
+		for k := 0; k < a.x.NumCol(); k++ {
+			a.x.Set(i, k, a.rnd.Float64())
+		}
+	}
+	a.X.ArrMulBy(width)
 	a.X.AddTo(min, 1)
 	// Run crossover loop
 	go a.crossoverLoop()
@@ -38,7 +42,7 @@ func newAgent(min, width *matrix.Dense, cost Cost) *Agent {
 
 // Returns random cut points for crossover
 func (a *Agent) cutpoints(cr float64) (start, stop int) {
-	n := a.x.Cols()
+	n := a.x.NumCol()
 	l := 1
 	for l < n && a.rnd.Float64() < cr {
 		l++
@@ -49,21 +53,21 @@ func (a *Agent) cutpoints(cr float64) (start, stop int) {
 	return
 }
 
-func perturb(u *matrix.Dense, in args, start, stop int) {
-	v := u.Vslice(start, stop)
-	v.Sub(in.b.Vslice(start, stop), in.c.Vslice(start, stop), in.f)
-	v.AddTo(in.a.Vslice(start, stop), 1)
+func perturb(u matrix.Dense, in args, start, stop int) {
+	v := u.Cols(start, stop)
+	v.Sub(in.b.Cols(start, stop), in.c.Cols(start, stop), in.f)
+	v.AddTo(in.a.Cols(start, stop), 1)
 }
 
 // Crossover loop
 func (a *Agent) crossoverLoop() {
-	U := matrix.DenseZero(a.X.Size()) // place for mutated matrix
-	u := U.Hvec()                     // we operate on vectorized matrices
-	n := u.Cols()
+	U := matrix.MakeDense(a.X.Size()) // place for mutated matrix
+	u := U.AsRow()                    // we operate on vectorized matrices
+	n := u.NumCol()
 	costX := a.cost(a.X)
 
 	for in := range a.in {
-		if in.a == nil {
+		if !in.a.IsValid() {
 			return
 		}
 		start, stop := a.cutpoints(in.cr)
@@ -71,13 +75,13 @@ func (a *Agent) crossoverLoop() {
 		//  u = a + f * (b + c) for elements between start and stop
 		//  u = x               for remaining elements
 		if start < stop {
-			u.Vslice(0, start).Copy(a.x.Vslice(0, start))
+			u.Cols(0, start).Copy(a.x.Cols(0, start))
 			perturb(u, in, start, stop)
-			u.Vslice(stop, n).Copy(a.x.Vslice(stop, n))
+			u.Cols(stop, n).Copy(a.x.Cols(stop, n))
 		} else {
 			stop++ // because it is modulo (n+1)
 			perturb(u, in, 0, stop)
-			u.Vslice(stop, start).Copy(a.x.Vslice(stop, start))
+			u.Cols(stop, start).Copy(a.x.Cols(stop, start))
 			perturb(u, in, start, n)
 		}
 		// Selection

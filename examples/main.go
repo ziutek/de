@@ -1,10 +1,10 @@
 package main
 
 import (
-	"golang.org/x/net/websocket"
 	"github.com/ziutek/de"
 	"github.com/ziutek/kview"
 	"github.com/ziutek/matrix"
+	"golang.org/x/net/websocket"
 	"log"
 	"math"
 	"net"
@@ -26,15 +26,15 @@ func html(w http.ResponseWriter, r *http.Request) {
 	page.Exec(w, Ctx{ListenOn: listenOn})
 }
 
-func cost(m *matrix.Dense) float64 {
+func cost(m matrix.Dense) float64 {
 	return Cost(m.Elems())
 }
 
 func data(w *websocket.Conn) {
 	defer w.Close()
 
-	min := matrix.NewDense(1, 4, 4, Min()...)
-	max := matrix.NewDense(1, 4, 4, Max()...)
+	min := matrix.AsDense(1, 4, Min())
+	max := matrix.AsDense(1, 4, Max())
 	m := de.NewMinimizer(cost, 20, min, max)
 	points := make([][2]int, len(m.Pop))
 	for {
