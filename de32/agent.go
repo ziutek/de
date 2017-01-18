@@ -12,30 +12,30 @@ type args struct {
 }
 
 type Agent struct {
-	X, x matrix32.Dense
-	in   chan args    // to send three vectors for crossovera
-	out  chan float32 // to obtain actual cost value for this agent
-	rnd  *rand.Rand
+	x   matrix32.Dense
+	in  chan args    // to send three vectors for crossovera
+	out chan float32 // to obtain actual cost value for this agent
+	rnd *rand.Rand
 }
 
-func newAgent(min, width matrix32.Dense, newcost func() Cost) *Agent {
+func newAgent(min, max []float32, newcost func() Cost) *Agent {
 	a := new(Agent)
-	a.X = matrix32.MakeDense(min.Size())
-	a.x = a.X.AsRow() // crossover operates on vectorized matrix
+	a.x = matrix32.MakeDense(1, len(min))
 	a.in = make(chan args, 1)
 	a.out = make(chan float32, 1)
 	a.rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 	// Place this agent in random place on the initial area.
-	for i := 0; i < a.x.NumRow(); i++ {
-		for k := 0; k < a.x.NumCol(); k++ {
-			a.x.Set(i, k, a.rnd.Float32())
-		}
+	x := a.x.Elems()
+	for i, m := range min {
+		x[i] = m + (max[i]-m)*a.rnd.Float32()
 	}
-	a.X.ArrMulBy(width)
-	a.X.AddTo(min, 1)
 	// Run crossover loop
 	go a.crossoverLoop(newcost)
 	return a
+}
+
+func (a *Agent) X() []float32 {
+	return a.x.Elems()
 }
 
 // Returns random cut points for crossover
@@ -59,11 +59,10 @@ func perturb(u matrix32.Dense, in args, start, stop int) {
 
 // Crossover loop
 func (a *Agent) crossoverLoop(newcost func() Cost) {
-	U := matrix32.MakeDense(a.X.Size()) // place for mutated matrix
-	u := U.AsRow()                    // we operate on vectorized matrices
+	u := matrix32.MakeDense(a.x.Size())
 	n := u.NumCol()
 	cost := newcost()
-	costX := cost.Cost(a.X)
+	costX := cost.Cost(a.x.Elems())
 
 	for in := range a.in {
 		if !in.a.IsValid() {
@@ -84,8 +83,7 @@ func (a *Agent) crossoverLoop(newcost func() Cost) {
 			perturb(u, in, start, n)
 		}
 		// Selection
-		if costU := cost.Cost(U); costU <= costX {
-			a.X, U = U, a.X
+		if costU := cost.Cost(u.Elems()); costU <= costX {
 			a.x, u = u, a.x
 			costX = costU
 		}

@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ziutek/de"
 	"github.com/ziutek/kview"
-	"github.com/ziutek/matrix"
 	"golang.org/x/net/websocket"
 	"log"
 	"math"
@@ -28,8 +27,8 @@ func html(w http.ResponseWriter, r *http.Request) {
 
 type cost struct{}
 
-func (_ cost) Cost(m matrix.Dense) float64 {
-	return Cost(m.Elems())
+func (_ cost) Cost(x []float64) float64 {
+	return Cost(x)
 }
 
 func newcost() de.Cost {
@@ -39,15 +38,13 @@ func newcost() de.Cost {
 func data(w *websocket.Conn) {
 	defer w.Close()
 
-	min := matrix.AsDense(1, 4, Min())
-	max := matrix.AsDense(1, 4, Max())
-	m := de.NewMinimizer(newcost, 20, min, max)
+	m := de.NewMinimizer(newcost, 20, Min(), Max())
 	points := make([][2]int, len(m.Pop))
 	for {
 		minCost, maxCost := m.NextGen()
 		// Transform agents in 4D space to points on 2D image
 		for i, a := range m.Pop {
-			points[i][0], points[i][1] = D4toD2(a.X.Elems())
+			points[i][0], points[i][1] = D4toD2(a.X())
 		}
 		// Send points to the browser
 		if err := websocket.JSON.Send(w, points); err != nil {

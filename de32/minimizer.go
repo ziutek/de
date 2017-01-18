@@ -3,7 +3,6 @@
 package de32
 
 import (
-	"github.com/ziutek/matrix/matrix32"
 	"log"
 	"math"
 	"math/rand"
@@ -12,7 +11,7 @@ import (
 
 // Cost is an interface that an optimization problem should implement.
 type Cost interface {
-	Cost(matrix32.Dense) float32
+	Cost([]float32) float32
 }
 
 // Minimizes cost function by evoluting the population of multiple agents.
@@ -29,7 +28,7 @@ type Minimizer struct {
 //	concurently by population of agents during minmizer initialization),
 //	n - number of entities in population,
 //	min, max - area for initial population.
-func NewMinimizer(newcost func() Cost, n int, min, max matrix32.Dense) *Minimizer {
+func NewMinimizer(newcost func() Cost, n int, min, max []float32) *Minimizer {
 	if n < 4 {
 		log.Panic("population too small: ", n)
 	}
@@ -37,7 +36,6 @@ func NewMinimizer(newcost func() Cost, n int, min, max matrix32.Dense) *Minimize
 	m.CR = 0.9
 	m.Pop = make([]*Agent, n)
 	// Initialization of population
-	max.AddTo(min, -1) // calculate width of initial area
 	for i := range m.Pop {
 		m.Pop[i] = newAgent(min, max, newcost)
 	}
